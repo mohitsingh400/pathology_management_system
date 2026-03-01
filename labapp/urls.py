@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import upload_report, download_report
 
 urlpatterns = [
     # Authentication URLs
@@ -20,6 +21,8 @@ urlpatterns = [
     path('booking/<int:booking_id>/reschedule/', views.reschedule_booking, name='reschedule_booking'),
     path('reports/', views.view_reports, name='view_reports'),
     path('report/<int:report_id>/download/', views.download_report, name='download_report'),
+    path('upload-report/<int:report_id>/', upload_report, name='upload_report'),
+    path('download-report/<int:report_id>/', download_report, name='download_report'),
     
     # Admin URLs
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),

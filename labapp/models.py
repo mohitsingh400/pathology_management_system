@@ -2,6 +2,9 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+import io
+from django.core.files.base import ContentFile
+from reportlab.pdfgen import canvas
 
 class User(AbstractUser):
     ROLE_CHOICES = [
@@ -86,12 +89,11 @@ class Report(models.Model):
         ('completed', 'Completed'),
     ]
     
-    booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name='report')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports')
-    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    booking = models.OneToOneField(Booking, on_delete=models.SET_NULL, null=True, related_name='report')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='reports')
+    service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    results = models.JSONField(default=dict, help_text="Test results in JSON format")
-    pdf_file = models.FileField(upload_to='reports/', null=True, blank=True)
+    pdf_file = models.FileField(upload_to='reports/', null=True, blank=True, help_text="Upload the report PDF")
     generated_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     reviewed_by = models.ForeignKey(
@@ -119,3 +121,39 @@ class TestResult(models.Model):
 
     def __str__(self):
         return f"{self.parameter}: {self.value} {self.unit}"
+
+def generate_pdf(report):
+    try:
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer)
+        
+        # Add content to the PDF
+        p.drawString(100, 800, f"Report for {report.user.username}")
+        p.drawString(100, 780, f"Service: {report.service.name}")
+        p.drawString(100, 760, f"Status: {report.get_status_display()}")
+        p.drawString(100, 740, "Test Results:")
+        
+        y = 720
+        # Include TestResult data if available
+        if report.test_results.exists():
+            for test_result in report.test_results.all():
+                p.drawString(120, y, f"{test_result.parameter}: {test_result.value} {test_result.unit} "
+                                     f"(Normal: {test_result.reference_range})")
+                y -= 20
+                if test_result.is_abnormal:
+                    p.drawString(120, y, f"** Abnormal **")
+                    y -= 20
+        else:
+            # Fallback to JSON results if TestResult objects are not used
+            for param, value in report.results.items():
+                p.drawString(120, y, f"{param}: {value}")
+                y -= 20
+        
+        p.save()
+        
+        # Save the PDF to the FileField
+        buffer.seek(0)
+        report.pdf_file.save(f"report_{report.id}.pdf", ContentFile(buffer.read()))
+        buffer.close()
+    except Exception as e:
+        print(f"Error generating PDF: {e}")

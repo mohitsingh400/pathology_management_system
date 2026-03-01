@@ -13,6 +13,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from io import BytesIO
 from django import forms
+from .forms import ReportUploadForm  # Ensure you have created this form
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -142,6 +143,7 @@ def service_list(request):
         )
     if category:
         services = services.filter(category=category)
+    
     
     return render(request, 'labapp/service_list.html', {
         'services': services,
@@ -380,3 +382,16 @@ def profile(request):
         'user': request.user,
         'reports': Report.objects.filter(user=request.user).order_by('-generated_at')
     })
+
+@login_required
+def upload_report(request, report_id):
+    report = get_object_or_404(Report, id=report_id)
+    if request.method == 'POST':
+        form = ReportUploadForm(request.POST, request.FILES, instance=report)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Report uploaded successfully.')
+            return redirect('profile')  # Redirect to the profile or another page
+    else:
+        form = ReportUploadForm(instance=report)
+    return render(request, 'labapp/upload_report.html', {'form': form, 'report': report})

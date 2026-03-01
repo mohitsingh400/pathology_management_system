@@ -16,10 +16,21 @@ class BookingAdmin(admin.ModelAdmin):
 
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ('user', 'service', 'generated_at', 'status')
+    list_display = ('user', 'service', 'status', 'generated_at', 'updated_at')
+    search_fields = ('user__username', 'service__name', 'status')
     list_filter = ('status', 'generated_at')
-    search_fields = ('user__username', 'service__name')
-    raw_id_fields = ('user', 'service', 'booking', 'reviewed_by')
+    fields = ('user', 'service', 'status', 'pdf_file', 'reviewed_by', 'notes')
+    raw_id_fields = ('user', 'service', 'reviewed_by')
+    
+    def save_model(self, request, obj, form, change):
+        # Handle potential NULL values for foreign keys
+        if not obj.user_id:
+            obj.user = None
+        if not obj.service_id:
+            obj.service = None
+        if not obj.reviewed_by_id:
+            obj.reviewed_by = None
+        super().save_model(request, obj, form, change)
 
 @admin.register(TestResult)
 class TestResultAdmin(admin.ModelAdmin):
