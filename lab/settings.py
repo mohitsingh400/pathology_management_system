@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-from pathlib import Path
+from pathlib import Path,os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,9 +25,9 @@ AUTH_USER_MODEL = 'labapp.User'
 SECRET_KEY = 'django-insecure-l$6d+zm(5yf$ds_@dufy!^v#-d+-34msvh=uu5r_(u!@rq+bcz'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [*]
 
 
 # Application definition
@@ -44,6 +44,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -142,3 +144,5 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 # Message settings
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
